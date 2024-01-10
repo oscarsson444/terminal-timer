@@ -2,17 +2,19 @@ import time
 import sys
 import os
 import threading
+from playsound import playsound
 from pyfiglet import Figlet
 from pynput.keyboard import Key, Listener, Controller
 
 
 running = False
+done = False
+MINUTES = 25
 
 
 def on_press(key):
     global running
     user_input = str(key).replace("'", "").lower()
-    clear_screen()
     if user_input == "s":
         running = True
     else:
@@ -31,10 +33,7 @@ def exit():
 
 
 def print_start_message():
-    clear_screen()
-    print_ascii("Pomodoro Timer\n")
-    print("Press S to start the timer, or any other key to exit.")
-    print(">>>")
+    print_in_star_square("Press S to start the timer, or any other key to exit.")
 
 
 def print_ascii(text):
@@ -42,18 +41,47 @@ def print_ascii(text):
     print(f.renderText(text))
 
 
-def print_countdown(time_left):
-    minutes = int(time_left / 60)
-    seconds = int(time_left % 60)
-
-    print_ascii("Time Left")
-    print(f"{minutes:02d}:{seconds:02d}", end="\r")
-
-
-def print_time_left(end_time):
+def print_terminal(end_time):
+    global done
     current_time = time.time()
     time_left = end_time - current_time
-    print_countdown(time_left)
+    if time_left <= 0 and not done:
+        playsound("done-sound.mp3", False)
+        done = True
+
+    if not done:
+        minutes = int(time_left / 60)
+        seconds = int(time_left % 60)
+        print_in_star_square(f"{minutes:02d}:{seconds:02d}")
+    else:
+        print_in_star_square("Times Up! Press Enter to exit.")
+
+
+def print_in_star_square(text):
+    # Define the width of the square based on the length of the text
+    width = 100  # Add 4 to leave some space around the text
+    # Define the height of the square
+    height = 5  # Adjust this value to change the height of the square
+
+    # Calculate padding for the text
+    padding = width - 2 - len(text)
+    left_padding = padding // 2
+    right_padding = padding - left_padding
+    clear_screen()
+    print_ascii("Pomodoro Timer")
+
+    # Print top border
+    print("*" * width)
+    # Print padding lines
+    for _ in range((height - 3) // 2):
+        print("*" + " " * (width - 2) + "*")
+    # Print text line
+    print("*" + " " * left_padding + text + " " * right_padding + "*")
+    # Print padding lines
+    for _ in range((height - 3) // 2):
+        print("*" + " " * (width - 2) + "*")
+    # Print bottom border
+    print("*" * width)
 
 
 def start_keyboard_listener():
@@ -75,11 +103,11 @@ def main():
         pass
 
     try:
-        end_time = time.time() + 25 * 60
+        end_time = time.time() + MINUTES * 60
         while running:
-            print_time_left(end_time)
+            print_terminal(end_time)
             time.sleep(1)
-            clear_screen()
+
         exit()
     except KeyboardInterrupt:
         print("\nProgram exited.")
